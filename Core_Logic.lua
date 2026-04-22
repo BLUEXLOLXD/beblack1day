@@ -3,61 +3,66 @@ return function(Config, UI, Utils)
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local RemoteEvent = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
     local PlayerData = ReplicatedStorage:WaitForChild("Player_Data")
-    local IsInMatch = false
+    
+    -- สถานะเริ่มต้น: ให้ถือว่า "อยู่ในแมพ" ไว้ก่อนเพื่อความปลอดภัย
+    local IsInMatch = true 
 
-    print("[CORE] System V13 - Logic Engine Started.")
+    print("[CORE] System V14 - Strict Logic Engine Started.")
 
-    -- [[ 1. LOOP ตรวจจับสถานะหน้าจอ (Monitor) ]] --
+    -- [[ 1. LOOP ตรวจจับสถานะ (Strict Monitor) ]] --
     task.spawn(function()
         while true do
             pcall(function()
+                local playRoomFolder = ReplicatedStorage:FindFirstChild("PlayRoom")
                 local hud = lp.PlayerGui:FindFirstChild("HUD")
-                local stageLabel = hud and hud.InGame.Main.GameInfo.Stage.Label
                 local rewardsUI = lp.PlayerGui:FindFirstChild("RewardsUI")
-
-                -- A. ตรวจจับสถานะในด่านปกติ
-                if stageLabel then
-                    local txt = string.lower(stageLabel.Text)
-                    if string.find(txt, "chapter") then
-                        IsInMatch = true
-                        UI.StatusLabel.Text = "⚔️ กำลัง clear story"
-                        UI.StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
-                    elseif string.find(txt, "shibuya") or string.find(txt, "calamity") then
-                        IsInMatch = true
-                        UI.StatusLabel.Text = "🔥 กำลังหา sukuna"
-                        UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+                
+                -- เช็คว่า "อยู่ล็อบบี้จริงๆ" หรือไม่
+                -- เงื่อนไข: ต้องมีโฟลเดอร์ PlayRoom และ "ไม่มี" HUD ของด่าน
+                if playRoomFolder and (not hud or not hud.InGame.Visible) then
+                    if IsInMatch then
+                        print("[MONITOR] ล็อบบี้ตรวจพบ: พร้อมรับคำสั่งสร้างห้อง")
+                        IsInMatch = false
                     end
-                end
-
-                -- B. ⭐ CONDITION: [WORLD CLEAR READY] (Chapter 5 + WON)
-                if rewardsUI and rewardsUI.Enabled then
-                    local chapterTxt = rewardsUI.Main.LeftSide.Chapter.Text
-                    local statusTxt = rewardsUI.Main.LeftSide.GameStatus.Text
+                    UI.StatusLabel.Text = "📡 อยู่ล็อบบี้: รอระบบสแกนด่าน..."
+                    UI.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 180)
+                else
+                    -- ถ้าไม่มี PlayRoom หรือมี HUD แสดงว่า "อยู่ในด่าน" หรือ "กำลังโหลด"
+                    IsInMatch = true
                     
-                    if string.find(chapterTxt, "Chapter 5") and string.find(statusTxt, "~ WON") then
-                        warn("[MATCH ENDED] Chapter 5 WON! Triggering Rerun...")
-                        UI.StatusLabel.Text = "🎉 จบโลกแล้ว! กำลังกลับล็อบบี้เพื่อ Rerun..."
-                        UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    -- ตรวจสอบหน้าจอจบเกม (เฉพาะด่าน 5)
+                    if rewardsUI and rewardsUI.Enabled then
+                        local chapterTxt = rewardsUI.Main.LeftSide.Chapter.Text
+                        local statusTxt = rewardsUI.Main.LeftSide.GameStatus.Text
                         
-                        task.wait(3) -- รอรางวัลเด้ง
-                        local leaveBtn = rewardsUI.Main.LeftSide.Buttons:FindFirstChild("Leave")
-                        if leaveBtn then
-                            -- กดยืนยันการ Leave (Rerun Process)
-                            local signals = {"Activated", "MouseButton1Click"}
-                            for _, sig in pairs(signals) do
-                                if leaveBtn:FindFirstChild(sig) or leaveBtn[sig] then
-                                    for _, con in pairs(getconnections(leaveBtn[sig])) do con:Fire() end
+                        if string.find(chapterTxt, "Chapter 5") and string.find(statusTxt, "~ WON") then
+                            UI.StatusLabel.Text = "🎉 จบด่าน 5! กำลังกด Leave..."
+                            UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+                            
+                            task.wait(3)
+                            local leaveBtn = rewardsUI.Main.LeftSide.Buttons:FindFirstChild("Leave")
+                            if leaveBtn then
+                                -- กด Leave
+                                for _, sig in pairs({"Activated", "MouseButton1Click"}) do
+                                    if leaveBtn:FindFirstChild(sig) or leaveBtn[sig] then
+                                        for _, con in pairs(getconnections(leaveBtn[sig])) do con:Fire() end
+                                    end
                                 end
                             end
                         end
-                        -- ปลดล็อค IsInMatch เพื่อให้กลับไปสร้างห้องโลกถัดไปเมื่อถึงล็อบบี้
-                        task.wait(5)
-                        IsInMatch = false 
-                    end
-                else
-                    -- ตรวจสอบว่าอยู่ล็อบบี้หรือยัง (ถ้าเจอ PlayRoom แปลว่าอยู่ล็อบบี้แล้ว)
-                    if ReplicatedStorage:FindFirstChild("PlayRoom") then
-                        IsInMatch = false
+                    else
+                        -- แสดงสถานะตาม HUD
+                        local stageLabel = hud and hud.InGame.Main.GameInfo.Stage.Label
+                        if stageLabel then
+                            local txt = string.lower(stageLabel.Text)
+                            if string.find(txt, "chapter") then
+                                UI.StatusLabel.Text = "⚔️ กำลัง clear story ("..stageLabel.Text..")"
+                                UI.StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+                            elseif string.find(txt, "shibuya") or string.find(txt, "calamity") then
+                                UI.StatusLabel.Text = "🔥 กำลังหา sukuna"
+                                UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+                            end
+                        end
                     end
                 end
             end)
@@ -71,13 +76,13 @@ return function(Config, UI, Utils)
     for _, j in ipairs(Config.Joiners) do table.insert(fullTeam, j) end
 
     if myName == Utils.cleanName(Config.HostName) then
-        print("[HOST] Leader Mode Running...")
         task.spawn(function()
             while true do
+                -- กฎเหล็ก: ถ้า IsInMatch เป็น true ห้ามทำอะไรทั้งนั้น
                 if not IsInMatch then
                     local targetChapter, targetWorld, modeType = nil, nil, "Story"
 
-                    -- หาด่านที่ยังไม่ผ่านของทุกคนในทีม
+                    -- สแกนหาด่าน
                     local worlds = {"OnePiece", "Namek", "Naruto", "TokyoGhoul", "SAO", "JJK", "TrashGround"}
                     for _, w in ipairs(worlds) do
                         for i = 1, 5 do
@@ -94,7 +99,7 @@ return function(Config, UI, Utils)
                         if targetChapter then break end
                     end
 
-                    -- ถ้า Story ครบหมด -> เช็ค Sukuna (Calamity)
+                    -- สแกน Sukuna
                     if not targetChapter and Config.CheckSukuna then
                         local missing = false
                         for _, j in ipairs(Config.Joiners) do
@@ -108,9 +113,9 @@ return function(Config, UI, Utils)
                         end
                     end
 
-                    -- เริ่มกระบวนการสร้างห้อง
-                    if targetChapter then
-                        warn("[HOST] Creating Room: " .. targetChapter)
+                    -- สร้างห้อง (รันเฉพาะตอน IsInMatch == false เท่านั้น)
+                    if targetChapter and not IsInMatch then
+                        warn("[HOST] กำลังสร้างห้อง: " .. targetChapter)
                         RemoteEvent:FireServer("Create")
                         task.wait(Config.DelayTime)
 
@@ -127,16 +132,17 @@ return function(Config, UI, Utils)
 
                         -- รอจนทีมครบ
                         while not Utils.isTeamInRoom(fullTeam, Config.HostName) and not IsInMatch do
-                            UI.StatusLabel.Text = "⏳ รอทีมเข้าห้อง: " .. targetChapter
-                            task.wait(1.5)
+                            UI.StatusLabel.Text = "⏳ รอทีมเข้า: " .. targetChapter
+                            task.wait(2)
                         end
 
                         -- Start Game
                         if Config.AutoSubmit and not IsInMatch then
-                            print("[REMOTE] All Ready. Firing Start!")
+                            print("[REMOTE] เริ่มเกม!")
                             task.wait(Config.DelayTime)
                             RemoteEvent:FireServer("Start")
-                            IsInMatch = true
+                            -- ล็อคสถานะทันทีหลังจากกดเริ่ม เพื่อไม่ให้ลูปมันทำงานซ้ำขณะกำลังวาร์ป
+                            IsInMatch = true 
                             task.wait(10)
                         end
                     end
@@ -145,9 +151,8 @@ return function(Config, UI, Utils)
             end
         end)
     else
-        -- Logic สำหรับ Joiner
+        -- Joiner Logic
         task.spawn(function()
-            print("[JOINER] Follower Mode Running...")
             while true do
                 if not IsInMatch then
                     pcall(function()
