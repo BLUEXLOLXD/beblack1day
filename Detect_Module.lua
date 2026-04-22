@@ -3,29 +3,42 @@ local lp = game:GetService("Players").LocalPlayer
 local ReRunTriggered = false
 
 function Detector.Start(Config, UI, Utils, CORE_URL)
-    print("[DETECTOR] Watchdog Module Started.")
+    print("[DETECTOR] Monitoring Module Active.")
     
     task.spawn(function()
         while true do
-            pcall(function()
+            local success, err = pcall(function()
+                local hud = lp.PlayerGui:FindFirstChild("HUD")
                 local rewardsUI = lp.PlayerGui:FindFirstChild("RewardsUI")
                 
+                -- [[ A. ตรวจจับสถานะในด่าน (HUD) ]] --
+                if hud and hud.InGame.Visible then
+                    local stageLabel = hud.InGame.Main.GameInfo.Stage.Label
+                    local txt = string.lower(stageLabel.Text)
+                    
+                    if string.find(txt, "chapter") then
+                        UI.StatusLabel.Text = "⚔️ กำลัง clear story: " .. stageLabel.Text
+                        UI.StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+                    elseif string.find(txt, "shibuya") or string.find(txt, "calamity") then
+                        UI.StatusLabel.Text = "🔥 กำลังหา sukuna"
+                        UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+                    end
+                end
+
+                -- [[ B. ตรวจจับจบโลก (RewardsUI) ]] --
                 if rewardsUI and rewardsUI.Enabled then
                     local chapterTxt = rewardsUI.Main.LeftSide.Chapter.Text
                     local statusTxt = rewardsUI.Main.LeftSide.GameStatus.Text
                     
-                    -- ⭐ เงื่อนไข: DETECTED: CHAPTER 5 CLEAR
+                    -- ⭐ เมื่อเจอ Chapter 5 Finish
                     if string.find(chapterTxt, "Chapter 5") and string.find(statusTxt, "~ WON") then
                         if not ReRunTriggered then
-                            ReRunTriggered = true 
-                            warn("⭐ [DETECTOR] Chapter 5 Finished! Re-running Core Logic...")
-                            
-                            if UI and UI.StatusLabel then
-                                UI.StatusLabel.Text = "🎉 Chapter 5 Clear! Re-loading Core..."
-                                UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-                            end
+                            ReRunTriggered = true
+                            UI.StatusLabel.Text = "⭐ DETECTED: CHAPTER 5 CLEAR!\nกำลัง Rerun ระบบ..."
+                            UI.StatusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+                            warn("[DETECTOR] World Clear! Re-executing Core Logic...")
 
-                            -- 1. กด Leave อัตโนมัติ (ใส่เพิ่มเพื่อความลื่นไหล)
+                            -- 1. กด Leave
                             task.wait(3)
                             local leaveBtn = rewardsUI.Main.LeftSide.Buttons:FindFirstChild("Leave")
                             if leaveBtn then
@@ -36,26 +49,22 @@ function Detector.Start(Config, UI, Utils, CORE_URL)
                                 end
                             end
 
-                            -- 2. ดึง Core_Logic ตัวล่าสุดมา Re-run
+                            -- 2. รีโหลด Core ใหม่จาก GitHub
                             task.wait(2)
-                            local success, content = pcall(function() return game:HttpGet(CORE_URL) end)
-                            if success and content ~= "" then
-                                local CoreFunc = loadstring(content)()
-                                if type(CoreFunc) == "function" then
-                                    task.spawn(function()
-                                        CoreFunc(Config, UI, Utils)
-                                    end)
-                                    print("🚀 [DETECTOR] Core_Logic Re-executed.")
-                                end
+                            local content = game:HttpGet(CORE_URL)
+                            if content then
+                                local func = loadstring(content)()
+                                task.spawn(function() func(Config, UI, Utils) end)
                             end
                         end
                     end
                 else
-                    -- รีเซ็ตสถานะเมื่อ RewardsUI ปิดลง (เช่น เมื่อถึงล็อบบี้)
+                    -- รีเซ็ต Trigger เมื่อ Rewards ปิด (กลับล็อบบี้)
                     ReRunTriggered = false
                 end
             end)
-            task.wait(2)
+            if not success then print("[DETECTOR ERROR] " .. err) end
+            task.wait(1.5)
         end
     end)
 end
