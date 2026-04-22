@@ -12,11 +12,20 @@ function UI.Setup()
     local ScreenGui = Instance.new("ScreenGui", playerGui)
     ScreenGui.Name = "AutoSystemGui"
     ScreenGui.ResetOnSpawn = false
+    
+    -- [[ ส่วนที่ทำให้ GUI อยู่บนสุด ]] --
+    -- ยิ่งเลขเยอะ ยิ่งอยู่ข้างหน้า GUI อื่นๆ ครับ (ปกติเกมทั่วไปจะอยู่ที่ 0-10)
+    ScreenGui.DisplayOrder = 999 
+    -- ---------------------------- --
 
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     MainFrame.Position = UDim2.new(0.5, -110, 0.02, 0) 
     MainFrame.Size = UDim2.new(0, 220, 0, 100)
+    -- ทำให้กดลาก GUI ได้ (เผื่ออยากย้ายที่)
+    MainFrame.Active = true
+    MainFrame.Draggable = true 
+    
     Instance.new("UICorner", MainFrame)
 
     local Title = Instance.new("TextLabel", MainFrame)
@@ -37,7 +46,7 @@ function UI.Setup()
     UI.StatusLabel.TextWrapped = true
     UI.StatusLabel.Text = "Ready to work..."
 
-    print("[UI] Setup Complete.")
+    print("[UI] Setup Complete (DisplayOrder: 999)")
     return UI
 end
 
