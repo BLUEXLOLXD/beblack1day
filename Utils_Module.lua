@@ -6,9 +6,9 @@ function Utils.cleanName(s)
 end
 
 function Utils.isTeamInRoom(teamList, hostName)
-    local room = ReplicatedStorage:FindFirstChild("PlayRoom")
-    local waterman = room and room:FindFirstChild(hostName)
-    local playersFolder = waterman and waterman:FindFirstChild("Players")
+    local roomFolder = ReplicatedStorage:FindFirstChild("PlayRoom")
+    local hostRoom = roomFolder and roomFolder:FindFirstChild(hostName)
+    local playersFolder = hostRoom and hostRoom:FindFirstChild("Players")
     if not playersFolder then return false end
     
     local inRoom = {}
