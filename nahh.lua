@@ -1759,6 +1759,7 @@ local e_state = {
 	autofarm = {
 		enabled = false,
 		blatant = false,
+		loop_delay = 5,
 		sector_times = {
 			[1] = 26,
 			[2] = 32,
@@ -1812,7 +1813,7 @@ else
 
 		if e_state.autofarm.enabled then
 			task.spawn(function()
-				while task.wait(5) do
+				while task.wait(e_state.autofarm.loop_delay) do
 					if not e_state.autofarm.enabled then
 						break
 					end
