@@ -2,7 +2,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
 	Name = "Project Apex Auto Farm",
-	LoadingTitle = "Project Apex Auto Farm",
+	LoadingTitle = ":)",
 	LoadingSubtitle = "by thechristmasboyz_",
 	ConfigurationSaving = {
 		Enabled = true,
