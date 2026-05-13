@@ -1806,6 +1806,18 @@ else
 		e_state.autofarm.blatant = state
 	end)
 
+	e_box.af:AddInput("autofarm_loop_delay", {
+		Text = "Loop Delay (s)",
+		Default = tostring(e_state.autofarm.loop_delay),
+		Placeholder = "Input here",
+		Callback = function(value)
+			local val = to_nonneg_number(value)
+			if val then
+				e_state.autofarm.loop_delay = val
+			end
+		end,
+	})
+
 	local timer_value = timer_info_value
 
 	af_enabled:OnChanged(function(state)
