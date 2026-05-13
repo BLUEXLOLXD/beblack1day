@@ -10,7 +10,7 @@ local Window = Rayfield:CreateWindow({
 	KeySystem = false,
 })
 
-local e_tab = Window:CreateTab("AutoFarm", 4483362458)
+local e_tab = Window:CreateTab("Economy", 4483362458)
 local reps = game:GetService("ReplicatedStorage")
 
 local function to_nonneg_number(value)
@@ -196,6 +196,28 @@ else
 end
 
 e_tab:CreateSection("Misc")
+
+local anti_afk_connection
+e_tab:CreateToggle({
+	Name = "Anti AFK",
+	CurrentValue = true,
+	Flag = "anti_afk",
+	Callback = function(state)
+		if state then
+			local vu = game:GetService("VirtualUser")
+			anti_afk_connection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+				vu:CaptureController()
+				vu:ClickButton2(Vector2.new())
+			end)
+		else
+			if anti_afk_connection then
+				anti_afk_connection:Disconnect()
+				anti_afk_connection = nil
+			end
+		end
+	end,
+})
+
 e_tab:CreateButton({
 	Name = "Rejoin Server",
 	Callback = function()
