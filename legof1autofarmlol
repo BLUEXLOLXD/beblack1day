@@ -278,11 +278,20 @@ e_tab:CreateToggle({
 	Flag = "anti_afk",
 	Callback = function(state)
 		if state then
-			local vu = game:GetService("VirtualUser")
-			anti_afk_connection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
-				vu:CaptureController()
-				vu:ClickButton2(Vector2.new())
+			local Players = game:GetService("Players")
+			local player = Players.LocalPlayer
+			local VirtualUser = game:GetService("VirtualUser")
+			local currentCamera = game.Workspace.CurrentCamera
+
+			anti_afk_connection = player.Idled:Connect(function()
+				VirtualUser:Button2Down(Vector2.zero, currentCamera.CFrame)
+				task.wait(1)
+				VirtualUser:Button2Up(Vector2.zero, currentCamera.CFrame)
+				
+				print("Player Successfully UnIdled.")
 			end)
+			
+			print("Anti AFK Active")
 		else
 			if anti_afk_connection then
 				anti_afk_connection:Disconnect()
