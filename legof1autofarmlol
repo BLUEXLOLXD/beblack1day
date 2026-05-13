@@ -99,7 +99,7 @@ local function format_uptime(seconds)
 end
 
 if not (has_timer_event and has_timer_info) then
-	e_tab:CreateLabel("Auto farm is unavailable i sus.")
+	e_tab:CreateLabel("Auto farm is unavailable.")
 else
 	e_tab:CreateSection("Auto farm")
 
