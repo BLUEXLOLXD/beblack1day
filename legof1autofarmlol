@@ -45,7 +45,7 @@ e_tab:CreateParagraph({
 	Content = warning_text
 })
 
-e_tab:CreateLabel("If you complete a lap and the money doesn't increase, rejoin until it does.")
+e_tab:CreateLabel("If you complete a lap and the money doesn't increase, Try Australia.")
 
 local e_state = {
 	autofarm = {
