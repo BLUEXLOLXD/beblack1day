@@ -280,13 +280,12 @@ e_tab:CreateToggle({
 		if state then
 			local Players = game:GetService("Players")
 			local player = Players.LocalPlayer
-			local VirtualUser = game:GetService("VirtualUser")
-			local currentCamera = game.Workspace.CurrentCamera
+			local VirtualInputManager = game:GetService("VirtualInputManager")
 
 			anti_afk_connection = player.Idled:Connect(function()
-				VirtualUser:Button2Down(Vector2.zero, currentCamera.CFrame)
-				task.wait(1)
-				VirtualUser:Button2Up(Vector2.zero, currentCamera.CFrame)
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightShift, false, game)
+				task.wait(0.1)
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightShift, false, game)
 				
 				print("Player Successfully UnIdled.")
 			end)
