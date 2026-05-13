@@ -1,7 +1,3 @@
--- wip ac bypass
-game:GetService("Players").LocalPlayer.PlayerScripts.AntiCheatLocal.Enabled = false
-game:GetService("StarterPlayer").StarterPlayerScripts.AntiCheatLocal.Enabled = false
-
 local create = loadstring(
 	game:HttpGet(
 		"https://raw.githubusercontent.com/charlesle-clerc/RRenhancements/refs/heads/main/utilities/library.luau"
@@ -1816,7 +1812,7 @@ else
 
 		if e_state.autofarm.enabled then
 			task.spawn(function()
-				while task.wait(2) do
+				while task.wait(5) do
 					if not e_state.autofarm.enabled then
 						break
 					end
