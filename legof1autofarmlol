@@ -1,0 +1,206 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+	Name = "Project Apex Auto Farm",
+	LoadingTitle = "Project Apex Auto Farm",
+	LoadingSubtitle = "by thechristmasboyz_",
+	ConfigurationSaving = {
+		Enabled = false,
+	},
+	KeySystem = false,
+})
+
+local e_tab = Window:CreateTab("AutoFarm", 4483362458)
+local reps = game:GetService("ReplicatedStorage")
+
+local function to_nonneg_number(value)
+	local n = tonumber(value)
+	if not n then
+		return nil
+	end
+	return math.max(0, n)
+end
+
+--// =========================
+--// Lap System Variables (Required for Autofarm)
+--// =========================
+local reps_events = reps:FindFirstChild("Events")
+local reps_values = reps:FindFirstChild("Values")
+local timer_event = reps_events and reps_events:FindFirstChild("Timer")
+local timer_info = reps_values and reps_values:FindFirstChild("TimerInfo")
+local timer_info_value = timer_info and timer_info:FindFirstChild("Value")
+
+local has_timer_event = timer_event and timer_event:IsA("RemoteEvent")
+local has_timer_info = timer_info_value and timer_info_value:IsA("StringValue")
+
+--// =========================
+--// Economy (Auto Farm)
+--// =========================
+
+local warning_text =
+	"The autofarm is preset for BAKU with a 1989-1994 era car. Please adjust properly to ensure good results."
+
+e_tab:CreateParagraph({
+	Title = "⚠️ Warning",
+	Content = warning_text
+})
+
+e_tab:CreateLabel("If you complete a lap and the money doesn't increase, rejoin until it does.")
+
+local e_state = {
+	autofarm = {
+		enabled = false,
+		blatant = false,
+		loop_delay = 3.5,
+		sector_times = {
+			[1] = 26,
+			[2] = 32,
+			[3] = 22,
+		},
+		sector_range = 1000,
+	},
+}
+
+local function submit_lap(s1, s2, s3)
+	if not has_timer_event then
+		return
+	end
+	local tt = s1 + s2 + s3
+	timer_event:FireServer(1, s1)
+	timer_event:FireServer(2, s2)
+	timer_event:FireServer(3, s3)
+	timer_event:FireServer(4, tt)
+end
+
+local function parse_timer_seconds(val)
+	if type(val) ~= "string" then
+		return 0
+	end
+	local min, sec = string.match(val, "(%d+):(%d+)")
+	min = tonumber(min) or 0
+	sec = tonumber(sec) or 0
+	return (min * 60) + sec
+end
+
+if not (has_timer_event and has_timer_info) then
+	e_tab:CreateLabel("Auto farm is unavailable.")
+else
+	e_tab:CreateSection("Auto farm")
+
+	local timer_value = timer_info_value
+
+	e_tab:CreateToggle({
+		Name = "Enable autofarm",
+		CurrentValue = false,
+		Flag = "autofarm_enabled",
+		Callback = function(state)
+			e_state.autofarm.enabled = state
+
+			if e_state.autofarm.enabled then
+				task.spawn(function()
+					while task.wait(e_state.autofarm.loop_delay) do
+						if not e_state.autofarm.enabled then
+							break
+						end
+
+						local s1_base = e_state.autofarm.sector_times[1] or 26
+						local s2_base = e_state.autofarm.sector_times[2] or 32
+						local s3_base = e_state.autofarm.sector_times[3] or 22
+						local s_total = s1_base + s2_base + s3_base
+
+						local should_submit = true
+						if not e_state.autofarm.blatant and parse_timer_seconds(timer_value.Value) >= (780 - s_total) then
+							should_submit = false
+						end
+
+						if should_submit then
+							local s1 = s1_base + (math.random(1, e_state.autofarm.sector_range) / 1000)
+							local s2 = s2_base + (math.random(1, e_state.autofarm.sector_range) / 1000)
+							local s3 = s3_base + (math.random(1, e_state.autofarm.sector_range) / 1000)
+							submit_lap(s1, s2, s3)
+						end
+					end
+				end)
+			end
+		end,
+	})
+
+	e_tab:CreateToggle({
+		Name = "Enable blatant",
+		CurrentValue = false,
+		Flag = "autofarm_blatant",
+		Callback = function(state)
+			e_state.autofarm.blatant = state
+		end,
+	})
+
+	e_tab:CreateInput({
+		Name = "Loop Delay (s)",
+		PlaceholderText = "Input here (Default: 3.5)",
+		RemoveTextAfterFocusLost = false,
+		Callback = function(value)
+			local val = to_nonneg_number(value)
+			if val then
+				e_state.autofarm.loop_delay = val
+			end
+		end,
+	})
+
+	e_tab:CreateInput({
+		Name = "S1 time",
+		PlaceholderText = "Input here (Default: 26)",
+		RemoveTextAfterFocusLost = false,
+		Callback = function(value)
+			local val = to_nonneg_number(value)
+			if val then
+				e_state.autofarm.sector_times[1] = val
+			end
+		end,
+	})
+
+	e_tab:CreateInput({
+		Name = "S2 time",
+		PlaceholderText = "Input here (Default: 32)",
+		RemoveTextAfterFocusLost = false,
+		Callback = function(value)
+			local val = to_nonneg_number(value)
+			if val then
+				e_state.autofarm.sector_times[2] = val
+			end
+		end,
+	})
+
+	e_tab:CreateInput({
+		Name = "S3 time",
+		PlaceholderText = "Input here (Default: 22)",
+		RemoveTextAfterFocusLost = false,
+		Callback = function(value)
+			local val = to_nonneg_number(value)
+			if val then
+				e_state.autofarm.sector_times[3] = val
+			end
+		end,
+	})
+
+	e_tab:CreateSlider({
+		Name = "Range (ms)",
+		Range = {0, 1000},
+		Increment = 1,
+		Suffix = "ms",
+		CurrentValue = 1000,
+		Flag = "autofarm_range_ms",
+		Callback = function(value)
+			e_state.autofarm.sector_range = value
+		end,
+	})
+end
+
+e_tab:CreateSection("Misc")
+e_tab:CreateButton({
+	Name = "Rejoin Server",
+	Callback = function()
+		local ts = game:GetService("TeleportService")
+		local p = game:GetService("Players").LocalPlayer
+		ts:TeleportToPlaceInstance(game.PlaceId, game.JobId, p)
+	end,
+})
