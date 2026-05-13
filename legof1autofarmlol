@@ -226,3 +226,26 @@ e_tab:CreateButton({
 		ts:TeleportToPlaceInstance(game.PlaceId, game.JobId, p)
 	end,
 })
+
+e_tab:CreateButton({
+	Name = "Server Hop",
+	Callback = function()
+		local HttpService = game:GetService("HttpService")
+		local TeleportService = game:GetService("TeleportService")
+		local p = game:GetService("Players").LocalPlayer
+		
+		local url = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Desc&limit=100"
+		local success, result = pcall(function()
+			return HttpService:JSONDecode(game:HttpGet(url))
+		end)
+
+		if success and result and result.data then
+			for _, server in ipairs(result.data) do
+				if type(server) == "table" and server.maxPlayers and server.playing and server.playing < server.maxPlayers and server.id ~= game.JobId then
+					TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, p)
+					return
+				end
+			end
+		end
+	end,
+})
