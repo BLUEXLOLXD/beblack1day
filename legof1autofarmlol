@@ -5,12 +5,21 @@ local Window = Rayfield:CreateWindow({
 	LoadingTitle = "Project Apex Auto Farm",
 	LoadingSubtitle = "by thechristmasboyz_",
 	ConfigurationSaving = {
-		Enabled = false,
+		Enabled = true,
+		FolderName = "ProjectApex",
+		FileName = "AutoFarmConfig"
 	},
 	KeySystem = false,
 })
 
-local e_tab = Window:CreateTab("Economy", 4483362458)
+Rayfield:Notify({
+	Title = "Script Loaded!",
+	Content = "Welcome to Project Apex Auto Farm.",
+	Duration = 5,
+	Image = 4483362458,
+})
+
+local e_tab = Window:CreateTab("Auto Farm", 4483362458)
 local reps = game:GetService("ReplicatedStorage")
 
 local function to_nonneg_number(value)
@@ -38,7 +47,7 @@ local has_timer_info = timer_info_value and timer_info_value:IsA("StringValue")
 --// =========================
 
 local warning_text =
-	"The autofarm is preset for BAKU with a 1989-1994 era car. Please adjust properly to ensure good results."
+	"Select a Track Preset from the dropdown, or pick 'Custom' and use the S1/S2/S3 inputs. Times may need adjustment based on the car era."
 
 e_tab:CreateParagraph({
 	Title = "⚠️ Warning",
@@ -89,12 +98,50 @@ else
 
 	local timer_value = timer_info_value
 
+	local track_presets = {
+		["Baku"] = {26, 32, 22},
+		["Australia"] = {30, 18, 35},
+		["Custom"] = {26, 32, 22}
+	}
+
+	e_tab:CreateDropdown({
+		Name = "Track Presets",
+		Options = {"Baku", "Australia", "Custom"},
+		CurrentOption = {"Baku (1989-1994)"},
+		MultipleOptions = false,
+		Flag = "autofarm_track_preset",
+		Callback = function(Option)
+			local selected = Option[1]
+			if track_presets[selected] then
+				e_state.autofarm.sector_times[1] = track_presets[selected][1]
+				e_state.autofarm.sector_times[2] = track_presets[selected][2]
+				e_state.autofarm.sector_times[3] = track_presets[selected][3]
+				
+				if selected ~= "Custom" then
+					Rayfield:Notify({
+						Title = "Preset Loaded",
+						Content = "Applied Sector Times for " .. selected,
+						Duration = 3,
+						Image = 4483362458,
+					})
+				end
+			end
+		end,
+	})
+
 	e_tab:CreateToggle({
 		Name = "Enable autofarm",
 		CurrentValue = false,
 		Flag = "autofarm_enabled",
 		Callback = function(state)
 			e_state.autofarm.enabled = state
+
+			Rayfield:Notify({
+				Title = "Auto Farm",
+				Content = state and "Auto Farm has been Enabled!" or "Auto Farm has been Disabled!",
+				Duration = 3,
+				Image = 4483362458,
+			})
 
 			if e_state.autofarm.enabled then
 				task.spawn(function()
@@ -137,6 +184,7 @@ else
 	e_tab:CreateInput({
 		Name = "Loop Delay (s)",
 		PlaceholderText = "Input here (Default: 3.5)",
+		Flag = "autofarm_loop_delay",
 		RemoveTextAfterFocusLost = false,
 		Callback = function(value)
 			local val = to_nonneg_number(value)
@@ -149,6 +197,7 @@ else
 	e_tab:CreateInput({
 		Name = "S1 time",
 		PlaceholderText = "Input here (Default: 26)",
+		Flag = "autofarm_s1",
 		RemoveTextAfterFocusLost = false,
 		Callback = function(value)
 			local val = to_nonneg_number(value)
@@ -161,6 +210,7 @@ else
 	e_tab:CreateInput({
 		Name = "S2 time",
 		PlaceholderText = "Input here (Default: 32)",
+		Flag = "autofarm_s2",
 		RemoveTextAfterFocusLost = false,
 		Callback = function(value)
 			local val = to_nonneg_number(value)
@@ -173,6 +223,7 @@ else
 	e_tab:CreateInput({
 		Name = "S3 time",
 		PlaceholderText = "Input here (Default: 22)",
+		Flag = "autofarm_s3",
 		RemoveTextAfterFocusLost = false,
 		Callback = function(value)
 			local val = to_nonneg_number(value)
@@ -215,6 +266,21 @@ e_tab:CreateToggle({
 				anti_afk_connection = nil
 			end
 		end
+	end,
+})
+
+--// Load the saved configuration automatically
+Rayfield:LoadConfiguration()
+
+--// =========================
+--// Settings Tab
+--// =========================
+local settings_tab = Window:CreateTab("Settings", 10734950309)
+settings_tab:CreateSection("UI Configuration")
+settings_tab:CreateButton({
+	Name = "Unload UI",
+	Callback = function()
+		Rayfield:Destroy()
 	end,
 })
 
