@@ -91,12 +91,21 @@ local function parse_timer_seconds(val)
 	return (min * 60) + sec
 end
 
+local function format_uptime(seconds)
+	local hours = math.floor(seconds / 3600)
+	local mins = math.floor((seconds % 3600) / 60)
+	local secs = seconds % 60
+	return string.format("%02d:%02d:%02d", hours, mins, secs)
+end
+
 if not (has_timer_event and has_timer_info) then
 	e_tab:CreateLabel("Auto farm is unavailable.")
 else
 	e_tab:CreateSection("Auto farm")
 
 	local timer_value = timer_info_value
+
+	local uptime_label = e_tab:CreateLabel("Autofarm Uptime: Offline")
 
 	local track_presets = {
 		["Baku"] = {26, 32, 22},
@@ -107,7 +116,7 @@ else
 	e_tab:CreateDropdown({
 		Name = "Track Presets",
 		Options = {"Baku", "Australia", "Custom"},
-		CurrentOption = {"Baku (1989-1994)"},
+		CurrentOption = {"Baku"},
 		MultipleOptions = false,
 		Flag = "autofarm_track_preset",
 		Callback = function(Option)
@@ -136,6 +145,12 @@ else
 		Callback = function(state)
 			e_state.autofarm.enabled = state
 
+			if state then
+				e_state.autofarm.start_time = os.time()
+			else
+				uptime_label:Set("Autofarm Uptime: Offline")
+			end
+
 			Rayfield:Notify({
 				Title = "Auto Farm",
 				Content = state and "Auto Farm has been Enabled!" or "Auto Farm has been Disabled!",
@@ -144,6 +159,14 @@ else
 			})
 
 			if e_state.autofarm.enabled then
+				task.spawn(function()
+					while e_state.autofarm.enabled do
+						local elapsed = os.time() - (e_state.autofarm.start_time or os.time())
+						uptime_label:Set("Autofarm Uptime: " .. format_uptime(elapsed))
+						task.wait(1)
+					end
+				end)
+
 				task.spawn(function()
 					while task.wait(e_state.autofarm.loop_delay) do
 						if not e_state.autofarm.enabled then
